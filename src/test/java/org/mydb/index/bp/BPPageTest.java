@@ -14,7 +14,7 @@ public class BPPageTest {
     @Test
     public void testWrite(){
         BPTree bpTree = new BPTree(null, "bpIndex", null);
-        int insertSize = 5;
+        int insertSize = 10;
         for(int i = 0; i < insertSize; i++){
             Random random = new Random();
             int i1 = random.nextInt();

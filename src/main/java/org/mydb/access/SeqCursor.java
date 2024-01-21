@@ -11,7 +11,7 @@ import org.mydb.store.page.PageLoader;
  * @description: 顺序扫描关系表中的元组
  * @date 2023/12/28 15:43
  */
-public class SeqScanner implements Scanner{
+public class SeqCursor implements Cursor {
 
     private Relation relation;
     //当前page,从第一页开始，第0页为pageoffset页
@@ -20,7 +20,7 @@ public class SeqScanner implements Scanner{
     private int currentTupleCount = 0;
     private PageLoader currentPageLoader;
 
-    public SeqScanner(Relation relation) {
+    public SeqCursor(Relation relation) {
         this.relation = relation;
     }
     @Override

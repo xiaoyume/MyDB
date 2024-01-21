@@ -5,10 +5,10 @@ import org.mydb.meta.Tuple;
 /**
  * @author xiaoy
  * @version 1.0
- * @description: TODO
+ * @description: 索引扫描
  * @date 2024/1/19 10:37
  */
-public class IndexScanner implements Scanner{
+public class IndexCursor implements Cursor {
     @Override
     public Tuple getNext() {
         return null;

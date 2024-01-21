@@ -5,6 +5,6 @@ import org.mydb.meta.Tuple;
 /**
  * 扫描器
  */
-public interface Scanner {
+public interface Cursor {
     Tuple getNext();
 }

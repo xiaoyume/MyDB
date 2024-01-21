@@ -14,7 +14,8 @@ public class PageNoAllocator {
     private AtomicInteger count;
     private List<Integer> freePageNoList;
     public PageNoAllocator(){
-        count = new AtomicInteger(0);
+        //0 号页面是meta页面，这里从1号开始
+        count = new AtomicInteger(1);
         freePageNoList = new LinkedList<>();
     }
 

@@ -1,16 +1,12 @@
 package org.mydb.meta;
 
 import org.junit.Test;
-import org.mydb.access.SeqScanner;
+import org.mydb.access.SeqCursor;
 import org.mydb.meta.factory.RelFactory;
 import org.mydb.meta.value.Value;
 import org.mydb.meta.value.ValueLong;
 import org.mydb.meta.value.ValueString;
 import org.mydb.store.item.Item;
-
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-
-import static org.junit.Assert.*;
 
 public class RelationTest {
     @Test
@@ -37,7 +33,7 @@ public class RelationTest {
         }
         relation2.flushToDisk();
 
-        SeqScanner seqScanner = new SeqScanner(relation2);
+        SeqCursor seqScanner = new SeqCursor(relation2);
         while(true){
             Tuple tuple = seqScanner.getNext();
             if(tuple == null){

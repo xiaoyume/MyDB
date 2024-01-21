@@ -4,6 +4,11 @@ import org.mydb.index.BaseIndex;
 import org.mydb.meta.Attribute;
 import org.mydb.meta.Relation;
 import org.mydb.meta.Tuple;
+import org.mydb.meta.value.ValueInt;
+import org.mydb.store.item.Item;
+import org.mydb.store.page.Page;
+import org.mydb.store.page.PageLoader;
+import org.mydb.store.page.PagePool;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -32,8 +37,23 @@ public class BPTree extends BaseIndex {
         nodeMap = new HashMap<>();
     }
 
+    /**
+     * 读取root节点
+     */
     public void loadFromDisk() {
-        getNodeFromPageNo(0);
+        int rootPageNo = getRootPageNoFromMeta();
+        getNodeFromPageNo(rootPageNo);
+    }
+
+    /**
+     * 从第0页的第0个tuple的第0个int值
+     * @return
+     */
+    public int getRootPageNoFromMeta(){
+
+        PageLoader loader = new PageLoader(fStore.readPageFromFile(0));
+        loader.load();
+        return ((ValueInt)loader.getTuples()[0].getValues()[0]).getInt();
     }
 
     /**
@@ -63,8 +83,15 @@ public class BPTree extends BaseIndex {
     }
     @Override
     public void flushToDisk() {
+        writeMetaPage();
         //
         root.flushToDisk(fStore);
+    }
+
+    public void writeMetaPage(){
+        Page page = PagePool.getInstance().getFreePage();
+        page.writeItem(new Item(BPPage.genTupleInt(root.getPageNo())));
+        fStore.writePageToFile(page, 0);
     }
 
     @Override

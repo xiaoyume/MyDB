@@ -182,8 +182,8 @@ public class BPNode {
     }
 
     /**
-     * 更新结构里的node，防止页面页面节点需要分裂，因为可能，左右分裂后还是超出空间，所以又递归判断
-     *
+     * 更新结构里的node，因为可能左右分裂后还是超出空间，所以又递归判断
+     * 分裂作用
      * @param tree
      */
     private void updateInsert(BPTree tree) {
@@ -316,6 +316,7 @@ public class BPNode {
             if(!contrains(key)){
                 return false;
             }
+            //包含了
             found = true;
             //表示节点同时也是根节点,直接移除
             if(isRoot){
@@ -324,16 +325,15 @@ public class BPNode {
                 if(canRemoveDirect(key)){
                     remove(key);
                 }else{//不满足移除后占用空间大于初始空间的一半
+                    //先移除
+                    remove(key);
                     //从前节点借 一个关键字
                     if(canLeafBorrowPrevious()){
-                        remove(key);
                         borrowLeafPrevious();
                     }else if(canLeafBorrowNext()){
-                        remove(key);
                         borrowLeafNext();
                     }else{//借不了，说明3个节点移除都会小于空间一半，所以要合并空间
-                        if(canLeafMerge(previous, key)){
-                            remove(key);
+                        if(canLeafMerge(previous)){
                             //与前节点合并
                             addPreNode(previous);
                             previous.recycle();
@@ -358,8 +358,7 @@ public class BPNode {
                                 previous.setNext(null);
                                 previous = null;
                             }
-                        }else if(canLeafMerge(next, key)){
-                            remove(key);
+                        }else if(canLeafMerge(next)){
                             addNextNode(next);
                             next.recycle();
                             //移除后节点对应父节点中的entry
@@ -438,16 +437,14 @@ public class BPNode {
      * 并且节点的父节点是当前节点的父节点
      * 那么可以合并
      * @param bpNode
-     * @param key
      * @return
      */
-    private boolean canLeafMerge(BPNode bpNode, Tuple key) {
+    private boolean canLeafMerge(BPNode bpNode) {
         if(bpNode == null){
             return false;
         }
         if(bpNode.bpPage.getContentSize() < bpNode.bpPage.getInitFreeSpace() / 2 && bpNode.bpPage
-                .getContentSize() <= bpPage.calculateRemainFreeSpace() + Item.getItemLength(key)
-                && bpNode.getParent() == parent){
+                .getContentSize() <= bpPage.calculateRemainFreeSpace() && bpNode.getParent() == parent){
             return true;
         }
         return false;
@@ -570,8 +567,8 @@ public class BPNode {
     }
 
     /**
-     * 删除节点后中间节点更新
-     * 防止移除后出现问题
+     * 删除key后的节点更新
+     * 页面空间太小
      *
      * @param tree
      */
@@ -583,7 +580,7 @@ public class BPNode {
               //如果子节点>=2,不需要处理
               if(children.size() >= 2){
                   return;
-              }else{
+              }else{//小于2，根节点大小一点是小于叶子节点的，直接是用叶子节点替代根节点
                   //当前节点和子节点合并
                   //将子节点作为根节点
                   //导致根节点的pageNo不为0
@@ -609,9 +606,20 @@ public class BPNode {
                     //从前节点借
                     //
                     borrowNodePrevious(previous);
+                    //判断借完之后是否超出空间
+                    if(bpPage.getContentSize() > bpPage.getInitFreeSpace()){
+                        System.out.println("size caculate error, contentSize=" + bpPage.getContentSize()
+                        + ", freeSpace=" + bpPage.getInitFreeSpace());
+                        throw new RuntimeException("size caculate error!");
+                    }
                 }else if(canNodeBorrowNext(next)){
                     //从后节点借
                     borrowNodeNext(next);
+                    if(bpPage.getContentSize() > bpPage.getInitFreeSpace()){
+                        System.out.println("size caculate error, contentSize=" + bpPage.getContentSize()
+                                + ", freeSpace=" + bpPage.getInitFreeSpace());
+                        throw new RuntimeException("size caculate error!");
+                    }
                 }else{
                     //需要合并节点
                     if(canMergePrevious(previous)){
@@ -640,6 +648,10 @@ public class BPNode {
                 //父节点做出改变后，父节点更新
                 parent.updataRemove(tree);
             }
+        }else if(this.bpPage.getContentSize() > this.bpPage.getInitFreeSpace()){
+            //可能在更新的时候出现虽然删除了关键字，但是更新了新的长key，导致比删除之前的size还大，可能导致分裂
+            //即changekeysize - deletekeysize > 0
+            updateInsert(bpTree);
         }
     }
 
