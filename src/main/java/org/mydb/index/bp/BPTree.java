@@ -10,7 +10,9 @@ import org.mydb.store.page.Page;
 import org.mydb.store.page.PageLoader;
 import org.mydb.store.page.PagePool;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -70,7 +72,7 @@ public class BPTree extends BaseIndex {
             return bpNode;
         }
         //尝试从文件中读取
-        BPPage bpPage = (BPPage) fStore.readPageFromFile(pageNo, true, this);
+        BPPage bpPage = (BPPage) fStore.readPageFromFile(pageNo, true);
         bpNode = bpPage.readFromPage(this);
         if(bpNode.isRoot()){
             root = bpNode;
@@ -95,18 +97,82 @@ public class BPTree extends BaseIndex {
     }
 
     @Override
-    public Tuple get(Tuple key) {
-        return root.get(key);
+    public GetRes getFirst(Tuple key) {
+        GetRes getRes = root.get(key);
+        //存在key一样的情况，所以必须向前遍历
+        BPNode bpNode = getRes.getBpNode().getPrevious();
+        while(bpNode != null){
+            //从后往前查找
+            for(int i = bpNode.getEntries().size() - 1; i >= 0; i--){
+                Tuple item = bpNode.getEntries().get(i);
+                if(item.compareIndex(key) == 0){
+                    getRes.setBpNode(bpNode);
+                    getRes.setTuple(item);
+                }
+                if(!item.equals(key)){
+                    break;
+                }
+            }
+            bpNode = bpNode.getPrevious();
+        }
+        return getRes;
     }
 
+    //遍历当前bpNode以及之后的node
     @Override
-    public boolean remove(Tuple key) {
+    public List<Tuple> getAll(Tuple key) {
+        GetRes res = getFirst(key);
+        List<Tuple> list = new ArrayList<>();
+        BPNode bpNode = res.getBpNode();
+        BPNode initNode = res.getBpNode();
+        while(bpNode != null){
+            for(Tuple tuple : bpNode.getEntries()){
+                if(tuple.compareIndex(key) == 0){
+                    list.add(tuple);
+                }else{
+                    //
+                    if(initNode != bpNode){
+                        break;
+                    }
+                }
+            }
+            bpNode = bpNode.getNext();
+        }
+        return list;
+    }
+
+    public Map<Integer, BPNode> getNodeMap(){
+        return nodeMap;
+    }
+
+    public BPTree setNodeMap(Map<Integer, BPNode> nodeMap) {
+        this.nodeMap = nodeMap;
+        return this;
+    }
+
+    public boolean innerRemove(Tuple key){
         return root.remove(key, this);
     }
+    @Override
+    public int remove(Tuple key){
+        int count = 0;
+        while(true){
+            if(!innerRemove(key)){
+                break;
+            }
+            count ++;
+        }
+        return count;
+    }
 
     @Override
-    public void insert(Tuple key) {
-        root.insert(key, this);
+    public boolean removeOne(Tuple key) {
+        return innerRemove(key);
+    }
+
+    @Override
+    public void insert(Tuple key, boolean isUnique) {
+        root.insert(key, this, isUnique);
     }
 
     public BPNode getRoot() {

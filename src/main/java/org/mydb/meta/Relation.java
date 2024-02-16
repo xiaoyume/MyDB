@@ -58,7 +58,7 @@ public class Relation {
         //只有从主键索引查出来的才能删除
         //从二级索引查出来需要在主键索引里查出来，才能知道pageNo和pageCount
         Page page = relStore.readPageFromFile(getPageNo(tuple));
-//        page.delete(tuple);
+        page.delete(getPageCount(tuple));
     }
 
     /**

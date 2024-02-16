@@ -40,6 +40,14 @@ public class FileUtils {
             throw new RuntimeException(e);
         }
     }
+
+    /**
+     * 从pos位置开始读全部
+     * @param channel
+     * @param buffer
+     * @param pos
+     * @throws IOException
+     */
     public static void readFully(FileChannel channel, ByteBuffer buffer, long pos) throws IOException {
         if(channel.position() != pos){
             channel.position(pos);
@@ -59,6 +67,23 @@ public class FileUtils {
             channel.position(pos);
         }
         do {
+            channel.write(buffer);
+        }while (buffer.remaining() > 0);
+    }
+
+    public static void readFully(FileChannel channel, ByteBuffer buffer) throws IOException {
+        do{
+            int r = channel.read(buffer);
+            if(r < 0){
+                throw new EOFException();
+            }
+        }while(buffer.remaining() > 0);
+    }
+
+    public static void writeFully(FileChannel channel, ByteBuffer buffer) throws IOException {
+        do{
+            //追加数据
+            channel.position(channel.size());
             channel.write(buffer);
         }while (buffer.remaining() > 0);
     }

@@ -11,7 +11,7 @@ import org.mydb.config.SystemConfig;
 public class PageHeaderData {
     public static final Integer PAGE_HEADER_SIZE = 24;
     //page开头的magic word
-    private String magicWord = "Freedom";
+    private String magicWord = "Session";
     //free space 的起始偏移
     private int lowerOffset;
     //指向pageheader种的loweroffset的起始位置
@@ -115,7 +115,7 @@ public class PageHeaderData {
     public int getTupleCount() {
         return tupleCount;
     }
-    public int geLength(){
+    public int getLength(){
         return headerLength;
     }
 

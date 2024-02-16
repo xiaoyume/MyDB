@@ -55,17 +55,16 @@ public class FStore {
      * @return
      */
     public Page readPageFromFile(int pageIndex){
-        return readPageFromFile(pageIndex, false, null);
+        return readPageFromFile(pageIndex, false);
     }
 
     /**
      *
      * @param pageIndex
      * @param isIndex
-     * @param bpTree
      * @return
      */
-    public Page readPageFromFile(int pageIndex, boolean isIndex, BPTree bpTree){
+    public Page readPageFromFile(int pageIndex, boolean isIndex){
         int readPos = pageIndex * SystemConfig.DEFAULT_PAGE_SIZE;//和前面写入的位置对应
         ByteBuffer buffer = ByteBuffer.allocate(SystemConfig.DEFAULT_PAGE_SIZE);
         try {

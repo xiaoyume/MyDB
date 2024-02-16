@@ -61,7 +61,7 @@ public class ValueBoolean extends Value{
      */
     @Override
     public int compare(Value value) {
-        boolean toCompare = ((ValueBoolean) value).getBoolean();
+        ((ValueBoolean) value).getBoolean()
         if(b){
             if(toCompare){
                 return 0;

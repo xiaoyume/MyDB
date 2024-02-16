@@ -4,6 +4,7 @@ import org.mydb.config.SystemConfig;
 import org.mydb.meta.Attribute;
 import org.mydb.meta.Relation;
 import org.mydb.meta.Tuple;
+import org.mydb.meta.value.Value;
 import org.mydb.store.fs.FStore;
 import org.mydb.store.page.PageNoAllocator;
 
@@ -14,6 +15,10 @@ import org.mydb.store.page.PageNoAllocator;
  * @date 2023/12/25 19:51
  */
 public abstract class BaseIndex implements Index{
+
+    //先假定当前key是唯一的，先处理key唯一的情况
+
+
     //哪个表
     protected Relation relation;
     //索引名称
@@ -23,7 +28,9 @@ public abstract class BaseIndex implements Index{
     //索引所在的文件具体位置
     protected String path;
     protected FStore fStore;
+    protected boolean isUnique;
     protected PageNoAllocator pageNoAllocator;
+    protected boolean isPrimaryKey;
 
     public BaseIndex(){
 
@@ -37,6 +44,8 @@ public abstract class BaseIndex implements Index{
         pageNoAllocator = new PageNoAllocator();
         fStore = new FStore(path);
         fStore.open();
+        isUnique = false;
+        isPrimaryKey = true;
     }
 
     /**
@@ -52,4 +61,36 @@ public abstract class BaseIndex implements Index{
     }
 
     public abstract void flushToDisk();
+
+    /**
+     * 从tuple中组织出属性列对应的索引key
+     * 因为一个tuple包含多个列，key的列可能不和tuple的列一一对应，所以需要转换
+     * @param tuple
+     * @return
+     */
+    public Tuple convertToKey(Tuple tuple){
+        Value[] values = new Value[attributes.length];
+        for(int i = 0; i < values.length; i++){
+            Attribute attribute = attributes[i];
+            //
+            values[i] = tuple.getValues()[attribute.getIndex()];
+        }
+        return new Tuple(values);
+    }
+
+    public boolean isUnique(){
+        return isUnique;
+    }
+    public BaseIndex setUnique(boolean unique){
+        isUnique = unique;
+        return this;
+    }
+    public boolean isPrimaryKey(){
+        return isPrimaryKey;
+    }
+    public BaseIndex setPrimaryKey(boolean primaryKey){
+        isPrimaryKey = primaryKey;
+        return this;
+    }
 }
+

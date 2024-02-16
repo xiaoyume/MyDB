@@ -9,5 +9,6 @@ public interface SystemConfig {
     String RELATION_FILE_PRE_FIX = "D:/freedom_master/mydb/";
     String FREEDOM_REL_PATH = "D:/freedom_master/mydb/t_freedom.txt";
     String FREEDOM_REL_META_PATH = "D:/freedom_master/mydb/t_freedom_meta";
+    //日志文件
     String FREEDOM_LOG_FILE_NAME = "D:/freedom_master/mydb/t_freedom_log";
 }

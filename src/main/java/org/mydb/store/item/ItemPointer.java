@@ -17,7 +17,7 @@ public class ItemPointer {
     }
 
     /**
-     * 写入一个指针，指向tupel的offset，和长度
+     * 写入一个指针，指向tuple的offset，和长度
      * @param page
      */
     void write(Page page){
@@ -28,7 +28,7 @@ public class ItemPointer {
         page.modifyLowerOffset(lowerOffset);
     }
 
-    public int getPtrLength(){
+    public static int getPtrLength(){
         return 8;
     }
     public int getTupleLength(){

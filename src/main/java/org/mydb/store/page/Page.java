@@ -2,6 +2,7 @@ package org.mydb.store.page;
 
 import org.mydb.meta.Tuple;
 import org.mydb.store.item.Item;
+import org.mydb.store.item.ItemPointer;
 import org.mydb.utils.BufferWrapper;
 
 import java.util.List;
@@ -71,9 +72,19 @@ public class Page {
             return false;
         }
     }
+
+    public void delete(int pageCount){
+        //头长度 + item指针长度 * 数量 + 4
+        //实际上是把对应的itemptrLength设置为-1
+        int position = pageHeaderData.getLength() + ItemPointer.getPtrLength() * pageCount + 4;
+        writeIntPos(-1, position);
+        //page本身存储的itemcount不变
+        dirty = true;
+    }
+
     public void writeItems(List<Item> items){
         for(Item item : items){
-            if(this.writeItem(item)){
+            if(writeItem(item)){
                 continue;
             }else{
                 throw new RuntimeException("Meta Info too long");
