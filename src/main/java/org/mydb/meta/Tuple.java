@@ -79,20 +79,44 @@ public class Tuple {
     }
 
     /**
+     * 另一个tuple可能是一个索引，所以两者的column的length不等
+     * 同时由于最终索引会加两个值表示pageNo和offset，所以应该比传进来的tuple长度大
+     * @param tuple
+     * @return
+     */
+    public int compareIndex(Tuple tuple){
+        return compare(tuple);
+    }
+
+    /**
      * 比较两个元组是否相等
      * @param tuple
-     * @return 相等返回0， 大于返回1， 小于返回-1
+     * @return 比较逻辑是，
      */
     public int compare(Tuple tuple){
         int min = values.length < tuple.getValues().length ? values.length : tuple.getValues().length;
+        int comp = 0;
         for(int i = 0; i < min; i++){
-           int comp = values[i].compare(tuple.getValues()[i]);
+           comp = values[i].compare(tuple.getValues()[i]);
            if(comp== 0){
                 continue;
            }
            return comp;
         }
-        return 0;
+        //for循环表示前面的都相等
+        if(comp == 0){
+            //tuple每一项都相同，长度也相同
+            if(values.length == tuple.getValues().length){
+                return 0;
+            }
+            //本长度小
+            if(values.length < tuple.getValues().length){
+                return -1;
+            }else{
+                return 1;
+            }
+        }
+        return comp;
     }
 
     /**

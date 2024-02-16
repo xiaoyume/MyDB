@@ -46,4 +46,21 @@ public class TupleTest {
         System.out.println(tuple.compare(tuple1));
     }
 
+    @Test
+    public void test1(){
+        ValueBoolean valueBoolean = new ValueBoolean(true);
+        ValueInt valueInt = new ValueInt(123);
+        ValueLong valueLong = new ValueLong(12344l);
+        ValueString valueString = new ValueString("ssssss");
+        ValueInt valueInt1 = new ValueInt(34);
+        Value[] v1 = new Value[]{valueBoolean, valueInt, valueLong, valueString};
+        Value[] v2 = new Value[]{valueBoolean, valueInt1, valueLong, valueString};
+        Value[] v3 = new Value[]{valueBoolean, valueInt, valueLong, valueString, valueInt1};
+        Tuple tuple = new Tuple(v1);
+        Tuple tuple1 = new Tuple(v2);
+        Tuple tuple2 = new Tuple(v3);
+        System.out.println(tuple.compare(tuple1));
+        System.out.println(tuple.compare(tuple2));
+    }
+
 }

@@ -1,6 +1,7 @@
 package org.mydb.meta;
 
 import org.mydb.config.SystemConfig;
+import org.mydb.index.BaseIndex;
 import org.mydb.meta.value.Value;
 import org.mydb.meta.value.ValueInt;
 import org.mydb.store.fs.FStore;
@@ -10,6 +11,7 @@ import org.mydb.store.page.PageLoader;
 import org.mydb.store.page.PagePool;
 import org.mydb.utils.ValueConverUtil;
 
+import java.sql.Time;
 import java.util.*;
 
 /**
@@ -35,17 +37,66 @@ public class Relation {
     private Map<Integer, Integer> pageOffsetMap;
     //页号 pageload映射
     private Map<Integer, Page> pageMap;
-
+    //索引集合，包含主键索引
+    private List<BaseIndex> indexs = new ArrayList<>();
+    //主键 聚簇索引
+    //最后两个必须是pageNo, countNo
+    private BaseIndex primaryIndex;
     public static final int META_PAGE_INDEX = 0;
     public static final int PAGE_OFFSET_INDEX = 0;
-    public Relation(){
 
+    public Relation() {
+
+    }
+
+    public void insert(Tuple tuple) {
+        insert(new Item(tuple));
+    }
+
+    public void delete(Tuple tuple) {
+        //直接删除会留下空洞，需要利用数据check
+        //只有从主键索引查出来的才能删除
+        //从二级索引查出来需要在主键索引里查出来，才能知道pageNo和pageCount
+        Page page = relStore.readPageFromFile(getPageNo(tuple));
+//        page.delete(tuple);
+    }
+
+    /**
+     * 主键索引的最后两个是pageCount和pageNo，取出tuple里的倒数第二个数据即可
+     *
+     * @param tuple
+     * @return
+     */
+    public int getPageNo(Tuple tuple) {
+        int length = tuple.getLength();
+        return ((ValueInt) (tuple.getValues()[length - 2])).getInt();
+    }
+
+    /**
+     * 同理，获取pageCount
+     *
+     * @param tuple
+     * @return
+     */
+    public int getPageCount(Tuple tuple) {
+        int length = tuple.getLength();
+        return ((ValueInt) (tuple.getValues()[length - 1])).getInt();
+    }
+
+    /**
+     * 删除旧tuple,插入新tuple
+     * @param before
+     * @param after
+     */
+    public void update(Tuple before, Tuple after) {
+        delete(before);
+        insert(after);
     }
 
     /**
      * 初始化两个文件读写通道，初始化页号偏移映射， 页号 pageload映射
      */
-    public void open(){
+    public void open() {
         relStore = new FStore(relPath);
         relStore.open();
         metaStore = new FStore(metaPath);
@@ -57,42 +108,43 @@ public class Relation {
 
     /**
      * 插入数据到表里
+     *
      * @param item
      */
-    public void insert(Item item){
+    public void insert(Item item) {
         int itemLength = item.getLength();
         int pageNo = findEnoughSpace(itemLength);
-        if(pageNo > 0){
+        if (pageNo > 0) {
             pageMap.get(pageNo).writeItem(item);
             return;
         }
         //没有空闲空间，则新建页
         Page page = mallocPage();
-        if(page.remainFreeSpace() < itemLength){
+        if (page.remainFreeSpace() < itemLength) {
             throw new RuntimeException("item size too long");
         }
         page.writeItem(item);
     }
 
-    public void loadFromDisk(){
+    public void loadFromDisk() {
         readMeta();
         readPageOffInfo();
         pageMap.clear();
         pageMap.clear();
         //通过pageoffset重新加载数据
-        for(int pageNo : pageOffsetMap.keySet()){
+        for (int pageNo : pageOffsetMap.keySet()) {
             pageMap.put(pageNo, relStore.readPageFromFile(pageNo));
         }
     }
 
-    public void flushToDisk(){
-        if(isPageCountDirty){
+    public void flushToDisk() {
+        if (isPageCountDirty) {
             //pagecount变化，则更新pageoffset
             writePageOffInfo();
         }
-        for(Integer pageNo : pageMap.keySet()){
+        for (Integer pageNo : pageMap.keySet()) {
             Page page = pageMap.get(pageNo);
-            if(page.isDirty()){
+            if (page.isDirty()) {
                 relStore.writePageToFile(page, pageNo);
                 //page写完后，page变为clean
                 page.setDirty(false);
@@ -102,13 +154,12 @@ public class Relation {
     }
 
 
-
     /**
      * 写入page offset映射信息
      */
     public void writePageOffInfo() {
         List<Item> list = new ArrayList<>();
-        for(Integer pageNo : pageOffsetMap.keySet()){
+        for (Integer pageNo : pageOffsetMap.keySet()) {
             Value[] values = new Value[2];
             values[0] = new ValueInt(pageNo);
             values[1] = new ValueInt(pageOffsetMap.get(pageNo));
@@ -129,10 +180,10 @@ public class Relation {
         PageLoader loader = relStore.readPageLoaderFromFile(0);
         pageOffsetMap.clear();
         pageCount = loader.getTuples().length;
-        for(Tuple tuple : loader.getTuples()){
+        for (Tuple tuple : loader.getTuples()) {
             Value[] values = tuple.getValues();
-            int pageNo = ((ValueInt)values[0]).getInt();
-            int pageoffset = ((ValueInt)values[1]).getInt();
+            int pageNo = ((ValueInt) values[0]).getInt();
+            int pageoffset = ((ValueInt) values[1]).getInt();
             pageOffsetMap.put(pageNo, pageoffset);
         }
     }
@@ -143,7 +194,7 @@ public class Relation {
     public void readMeta() {
         PageLoader loader = metaStore.readPageLoaderFromFile(0);
         List<Attribute> list = new LinkedList<>();
-        for(Tuple tuple : loader.getTuples()){
+        for (Tuple tuple : loader.getTuples()) {
             Attribute attr = ValueConverUtil.convertValue(tuple.getValues());
             list.add(attr);
         }
@@ -151,13 +202,14 @@ public class Relation {
         tupleDesc = new TupleDesc(list.toArray(new Attribute[list.size()]));
     }
 
-    public void writeMeta(){
+    public void writeMeta() {
         Page page = convertMetaToPage();
         metaStore.writePageToFile(page, META_PAGE_INDEX);
     }
 
     /**
      * 元数据转为page
+     *
      * @return
      */
     private Page convertMetaToPage() {
@@ -166,75 +218,90 @@ public class Relation {
         Page page = PagePool.getInstance().getFreePage();
 //        pageMap.put(pageCount, page);
 //        pageOffsetMap.put(pageCount, pageCount * SystemConfig.DEFAULT_PAGE_SIZE);
-        pageCount ++;
+        pageCount++;
         page.writeItems(list);
         return page;
     }
 
 
-    private int findEnoughSpace(int needSpace){
+    private int findEnoughSpace(int needSpace) {
         //遍历每一页，看看有无空闲空间
-        for(Integer pageNo : pageMap.keySet()){
-            if(pageMap.get(pageNo).remainFreeSpace() >= needSpace){
+        for (Integer pageNo : pageMap.keySet()) {
+            if (pageMap.get(pageNo).remainFreeSpace() >= needSpace) {
                 return pageNo;
             }
         }
         return -1;
     }
 
-    private Page mallocPage(){
+    private Page mallocPage() {
         Page page = PagePool.getInstance().getFreePage();
         pageMap.put(pageCount, page);
         pageOffsetMap.put(pageCount, pageCount * SystemConfig.DEFAULT_PAGE_SIZE);
         incrPageCount();
         return page;
     }
-    public void incrPageCount(){
-        pageCount ++;
+
+    public void incrPageCount() {
+        pageCount++;
         isPageCountDirty = true;
     }
 
-    public String getRelPath(){
+    public String getRelPath() {
         return relPath;
     }
-    public Relation setRelPath(String relPath){
+
+    public Relation setRelPath(String relPath) {
         this.relPath = relPath;
         return this;
     }
 
-    public String getMetaPath(){
+    public String getMetaPath() {
         return metaPath;
     }
-    public Relation setMetaPath(String metaPath){
+
+    public Relation setMetaPath(String metaPath) {
         this.metaPath = metaPath;
         return this;
     }
-    public TupleDesc getTupleDesc(){
+
+    public TupleDesc getTupleDesc() {
         return tupleDesc;
     }
-    public Relation setTupleDesc(TupleDesc tupleDesc){
+
+    public Relation setTupleDesc(TupleDesc tupleDesc) {
         this.tupleDesc = tupleDesc;
         return this;
     }
 
-    public void close(){
+    public void close() {
         relStore.close();
         metaStore.close();
     }
 
-    public Map<Integer, Page> getPageMap(){
+    public Map<Integer, Page> getPageMap() {
         return pageMap;
     }
-    public Relation setPageMap(Map<Integer, Page> pageMap){
+
+    public Relation setPageMap(Map<Integer, Page> pageMap) {
         this.pageMap = pageMap;
         return this;
     }
 
-    public int getPageCount(){
+    public int getPageCount() {
         return pageCount;
     }
-    public Relation setPageCount(int pageCount){
+
+    public Relation setPageCount(int pageCount) {
         this.pageCount = pageCount;
+        return this;
+    }
+
+    public List<BaseIndex> getIndexs() {
+        return indexs;
+    }
+    public Relation setIndexs(List<BaseIndex> indexs) {
+        this.indexs = indexs;
         return this;
     }
 

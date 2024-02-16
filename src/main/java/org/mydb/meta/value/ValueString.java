@@ -62,6 +62,6 @@ public class ValueString extends Value{
 
     @Override
     public int compare(Value value) {
-        return 0;
+        return s.compareTo(((ValueString)value).getString());
     }
 }

@@ -12,6 +12,16 @@ public class Attribute {
     private int index;
     private String comment;
 
+    public Attribute() {
+    }
+
+    public Attribute(String name, int type, int index, String comment) {
+        this.name = name;
+        this.type = type;
+        this.index = index;
+        this.comment = comment;
+    }
+
     public String getName() {
         return name;
     }

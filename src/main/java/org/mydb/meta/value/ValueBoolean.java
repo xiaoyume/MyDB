@@ -55,13 +55,26 @@ public class ValueBoolean extends Value{
         }
     }
 
-    /**
+    /**比较，0:相等，1:大于，-1:小于
      * @param value
      * @return
      */
     @Override
     public int compare(Value value) {
-        return 0;
+        boolean toCompare = ((ValueBoolean) value).getBoolean();
+        if(b){
+            if(toCompare){
+                return 0;
+            }else{
+                return 1;
+            }
+        }else{
+            if(toCompare){
+                return -1;
+            }else{
+                return 0;
+            }
+        }
     }
 
     @Override
