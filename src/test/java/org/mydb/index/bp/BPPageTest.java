@@ -19,7 +19,7 @@ public class BPPageTest {
             Random random = new Random();
             int i1 = random.nextInt();
             Tuple tuple = genTuple(i1);
-            bpTree.insert(tuple);
+            bpTree.insert(tuple, true);
         }
         bpTree.flushToDisk();
     }

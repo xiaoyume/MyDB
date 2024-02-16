@@ -21,7 +21,7 @@ public class BPTreeTest {
             values[0] = new ValueInt(i);
             values[1] = new ValueString("xiaoyumeDB");
             Tuple tuple = new Tuple(values);
-            bpTree.insert(tuple);
+            bpTree.insert(tuple, true);
 //            printBtree(bpTree.getRoot());
         }
         printBtree(bpTree.getRoot());
@@ -35,11 +35,11 @@ public class BPTreeTest {
         Tuple t3 = genTuple(1);
         Tuple t4 = genTuple(4);
         Tuple t5 = genTuple(5);
-        bpTree.insert(t1);
-        bpTree.insert(t2);
-        bpTree.insert(t3);
-        bpTree.insert(t4);
-        bpTree.insert(t5);
+        bpTree.insert(t1, true);
+        bpTree.insert(t2, true);
+        bpTree.insert(t3, true);
+        bpTree.insert(t4, true);
+        bpTree.insert(t5, true);
         pBtree(bpTree);
         bpTree.remove(t1);
         System.out.println("*********************8\n");
